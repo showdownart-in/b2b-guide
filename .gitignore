@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+
+# Local SQLite DB (optional: remove if you want to track it)
+# pyramid.db
+
+# Logs and temp
+*.log
+npm-debug.log*
+.DS_Store
+
+# Build output (if not committed)
+# dist/
+# public/build/
