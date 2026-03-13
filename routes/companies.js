@@ -22,7 +22,11 @@ router.get('/:id', (req, res) => {
 
 router.post('/', (req, res) => {
   try {
-    const { name, external_id, email, phone, address_line1, address_city, address_province, address_country, address_zip } = req.body || {};
+    const {
+      name, external_id, email, phone,
+      address_line1, address_city, address_province, address_country, address_zip,
+      projekttyp, e_postfaktura, kundtyp, ansvarig_agent, saljare, leveransvillkor,
+    } = req.body || {};
     if (!name) return res.status(400).json({ error: 'name is required' });
     const company = pyramid.createCompany({
       name,
@@ -34,6 +38,12 @@ router.post('/', (req, res) => {
       address_province,
       address_country,
       address_zip,
+      projekttyp,
+      e_postfaktura,
+      kundtyp,
+      ansvarig_agent,
+      saljare,
+      leveransvillkor,
     });
     res.status(201).json(company);
   } catch (e) {

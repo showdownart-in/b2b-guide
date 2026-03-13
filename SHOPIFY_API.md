@@ -2,6 +2,32 @@
 
 This document explains the **exact Shopify Admin APIs** called by the sample app to sync **Pyramid-approved** B2B data into Shopify.
 
+---
+
+## Table of contents
+
+1. [Authentication & base URLs](#authentication--base-urls)
+   - [Access token](#access-token)
+   - [Store domain](#store-domain)
+   - [API version](#api-version)
+2. [Required Shopify features & scopes](#required-shopify-features--scopes)
+   - [B2B (Companies)](#b2b-companies)
+   - [Customers](#customers)
+   - [Companies (GraphQL)](#companies-graphql)
+3. [API calls made by this app](#api-calls-made-by-this-app)
+   - [1) Create customer (REST Admin API)](#1-create-customer-rest-admin-api)
+   - [2) Create company (GraphQL Admin API, B2B)](#2-create-company-graphql-admin-api-b2b)
+   - [2b) Company custom metafields (GraphQL: metafieldsSet)](#2b-company-custom-metafields-graphql-metafieldsset)
+   - [3) Assign customer as company contact (GraphQL Admin API, B2B)](#3-assign-customer-as-company-contact-graphql-admin-api-b2b)
+4. [Sync sequence (what happens on "Sync to Shopify")](#sync-sequence-what-happens-on-sync-to-shopify)
+   - [Sync a single customer](#sync-a-single-customer)
+   - [Sync a company (and its approved customers)](#sync-a-company-and-its-approved-customers)
+5. [Error handling behavior (important for ops)](#error-handling-behavior-important-for-ops)
+6. [Partial order fulfillment (REST Admin API)](#partial-order-fulfillment-rest-admin-api)
+7. [What this app does NOT do (yet)](#what-this-app-does-not-do-yet)
+
+---
+
 The Shopify integration lives in:
 
 ```1:143:/Users/ajay/Downloads/Workspace/SDA/geggamoja/b2b/services/shopify.js
@@ -257,6 +283,139 @@ GraphQL returns IDs as GIDs, e.g.:
 - `companyLocationId`: `gid://shopify/CompanyLocation/…`
 
 Those values are stored in SQLite in the Pyramid simulation (`companies.shopify_company_id`, `companies.shopify_location_id`) when sync succeeds.
+
+### 2b) Company custom metafields (GraphQL: metafieldsSet)
+
+`companyCreate` does **not** accept metafields. To add custom fields to a Company, the app calls **`metafieldsSet`** after the company is created.
+
+**Creation flow**
+
+1. Create the company with `companyCreate` (section 2) and get the company GID from the response.
+2. Call `metafieldsSet` with `ownerId` = that company GID and the custom key/value pairs. You can do this in the same integration flow right after step 1.
+
+**Shopify Company metafields used (namespace `custom`):**
+
+| `namespace.key` | Description (example) |
+|-----------------|----------------------|
+| `custom.projekttyp` | Projekttyp (Project type) |
+| `custom.e_postfaktura` | E-postfaktura (Email invoice) |
+| `custom.kundtyp` | Kundtyp (Customer type) |
+| `custom.ansvarig_agent` | Ansvarig agent (Responsible agent) |
+| `custom.saljare` | Säljare (Seller) |
+| `custom.leveransvillkor` | Leveransvillkor (Delivery terms) |
+
+**How Pyramid can add/update these:**
+
+1. **When creating a company:** Include the six fields in the company payload (e.g. in `POST /api/onboard`): `projekttyp`, `e_postfaktura`, `kundtyp`, `ansvarig_agent`, `saljare`, `leveransvillkor`. The app stores them in Pyramid (SQLite), creates the company in Shopify with `companyCreate`, then calls `metafieldsSet` with `ownerId` = the new company GID and one entry per non-empty value (type `single_line_text_field`, namespace `custom`).
+2. **When updating a company:** To change metafields on an existing Shopify company, call the GraphQL `metafieldsSet` mutation with the company’s GID as `ownerId` and the same keys; values are overwritten. (This app does not expose an update-company endpoint; you can add one that calls `setCompanyMetafields` in `services/shopify.js`.)
+
+**Endpoint**
+
+- `POST /admin/api/{version}/graphql.json` (same as other GraphQL Admin API calls)
+
+**Mutation**
+
+```graphql
+mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
+  metafieldsSet(metafields: $metafields) {
+    metafields { id key namespace value }
+    userErrors { field message code }
+  }
+}
+```
+
+**MetafieldsSetInput (per metafield):**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `ownerId` | `ID!` | **yes** | Company GID, e.g. `gid://shopify/Company/1234567890`. |
+| `namespace` | `String!` | **yes** | Use `"custom"` for these company metafields. |
+| `key` | `String!` | **yes** | One of: `projekttyp`, `e_postfaktura`, `kundtyp`, `ansvarig_agent`, `saljare`, `leveransvillkor`. |
+| `type` | `String!` | **yes** | Use `"single_line_text_field"` for text values. |
+| `value` | `String!` | **yes** | The string value to store. |
+
+- Maximum **25 metafields** per request. Omit any key you do not want to set (or send empty string to clear if the API allows).
+
+**Example: create company metafields (full request body)**
+
+After you have created a company and received e.g. `companyId: "gid://shopify/Company/1234567890"`, send:
+
+```json
+{
+  "query": "mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) { metafieldsSet(metafields: $metafields) { metafields { id key namespace value } userErrors { field message code } } }",
+  "variables": {
+    "metafields": [
+      {
+        "ownerId": "gid://shopify/Company/1234567890",
+        "namespace": "custom",
+        "key": "projekttyp",
+        "type": "single_line_text_field",
+        "value": "Retail"
+      },
+      {
+        "ownerId": "gid://shopify/Company/1234567890",
+        "namespace": "custom",
+        "key": "e_postfaktura",
+        "type": "single_line_text_field",
+        "value": "yes"
+      },
+      {
+        "ownerId": "gid://shopify/Company/1234567890",
+        "namespace": "custom",
+        "key": "kundtyp",
+        "type": "single_line_text_field",
+        "value": "B2B"
+      },
+      {
+        "ownerId": "gid://shopify/Company/1234567890",
+        "namespace": "custom",
+        "key": "ansvarig_agent",
+        "type": "single_line_text_field",
+        "value": "Agent A"
+      },
+      {
+        "ownerId": "gid://shopify/Company/1234567890",
+        "namespace": "custom",
+        "key": "saljare",
+        "type": "single_line_text_field",
+        "value": "Sales 1"
+      },
+      {
+        "ownerId": "gid://shopify/Company/1234567890",
+        "namespace": "custom",
+        "key": "leveransvillkor",
+        "type": "single_line_text_field",
+        "value": "DDP"
+      }
+    ]
+  }
+}
+```
+
+**Example: success response**
+
+```json
+{
+  "data": {
+    "metafieldsSet": {
+      "metafields": [
+        { "id": "gid://shopify/Metafield/111", "key": "projekttyp", "namespace": "custom", "value": "Retail" },
+        { "id": "gid://shopify/Metafield/112", "key": "e_postfaktura", "namespace": "custom", "value": "yes" },
+        { "id": "gid://shopify/Metafield/113", "key": "kundtyp", "namespace": "custom", "value": "B2B" },
+        { "id": "gid://shopify/Metafield/114", "key": "ansvarig_agent", "namespace": "custom", "value": "Agent A" },
+        { "id": "gid://shopify/Metafield/115", "key": "saljare", "namespace": "custom", "value": "Sales 1" },
+        { "id": "gid://shopify/Metafield/116", "key": "leveransvillkor", "namespace": "custom", "value": "DDP" }
+      ],
+      "userErrors": []
+    }
+  }
+}
+```
+
+**Used in this app**
+
+- **`services/shopify.js`**: `setCompanyMetafields(companyIdGid, metafields)` builds a `MetafieldsSetInput` for each non-empty value (namespace `"custom"`, type `"single_line_text_field"`) and POSTs the `metafieldsSet` mutation to the GraphQL endpoint.
+- Called from `createShopifyCompany` immediately after `companyCreate` when the company object has any of the six metafield values set. On failure, the company is still created; a warning is logged and the sync continues.
 
 ### 3) Assign customer as company contact (GraphQL Admin API, B2B)
 

@@ -23,6 +23,12 @@ db.exec(`
     status TEXT NOT NULL DEFAULT 'pending',
     shopify_company_id TEXT,
     shopify_location_id TEXT,
+    projekttyp TEXT,
+    e_postfaktura TEXT,
+    kundtyp TEXT,
+    ansvarig_agent TEXT,
+    saljare TEXT,
+    leveransvillkor TEXT,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
   );
@@ -46,5 +52,17 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_customers_status ON customers(status);
   CREATE INDEX IF NOT EXISTS idx_customers_company ON customers(company_id);
 `);
+
+// Company metafields (Shopify custom.*) – add columns if missing (e.g. existing DBs)
+const companyMetafieldColumns = [
+  'projekttyp', 'e_postfaktura', 'kundtyp', 'ansvarig_agent', 'saljare', 'leveransvillkor',
+];
+const info = db.prepare("PRAGMA table_info(companies)").all();
+const existingCols = info.map((c) => c.name);
+for (const col of companyMetafieldColumns) {
+  if (!existingCols.includes(col)) {
+    db.prepare(`ALTER TABLE companies ADD COLUMN ${col} TEXT`).run();
+  }
+}
 
 export default db;

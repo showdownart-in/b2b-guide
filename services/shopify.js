@@ -171,7 +171,71 @@ export async function createShopifyCompany(company, primaryContact = null) {
   const companyId = result?.company?.id;
   const locationId = result?.company?.locations?.edges?.[0]?.node?.id ?? null;
   if (!companyId) throw new Error('Shopify company create returned no company id');
+
+  // Set custom Company metafields (Shopify does not support metafields in companyCreate; use metafieldsSet after)
+  const metafieldValues = {
+    projekttyp: company.projekttyp,
+    e_postfaktura: company.e_postfaktura,
+    kundtyp: company.kundtyp,
+    ansvarig_agent: company.ansvarig_agent,
+    saljare: company.saljare,
+    leveransvillkor: company.leveransvillkor,
+  };
+  const hasMetafields = Object.values(metafieldValues).some((v) => v != null && String(v).trim() !== '');
+  if (hasMetafields) {
+    try {
+      await setCompanyMetafields(companyId, metafieldValues);
+    } catch (err) {
+      console.warn('Company metafields set failed (company was created):', err.message);
+    }
+  }
+
   return { companyId, companyLocationId: locationId };
+}
+
+/**
+ * Set custom metafields on a Shopify Company (namespace: custom).
+ * Keys: projekttyp, e_postfaktura, kundtyp, ansvarig_agent, saljare, leveransvillkor.
+ * ownerId must be the company GID (e.g. gid://shopify/Company/123).
+ */
+export async function setCompanyMetafields(companyIdGid, metafields) {
+  if (!TOKEN || !SHOP || SHOP.includes('your-store')) {
+    throw new Error('Shopify not configured');
+  }
+  const namespace = 'custom';
+  const type = 'single_line_text_field';
+  const metafieldsList = [];
+  for (const [key, value] of Object.entries(metafields)) {
+    if (value == null || String(value).trim() === '') continue;
+    metafieldsList.push({
+      ownerId: companyIdGid,
+      namespace,
+      key,
+      type,
+      value: String(value).trim(),
+    });
+  }
+  if (metafieldsList.length === 0) return;
+
+  const mutation = `
+    mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
+      metafieldsSet(metafields: $metafields) {
+        metafields { id key namespace value }
+        userErrors { field message code }
+      }
+    }
+  `;
+  const res = await fetch(baseGraphQL, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({ query: mutation, variables: { metafields: metafieldsList } }),
+  });
+  if (!res.ok) throw new Error(`Shopify GraphQL error: ${res.status}`);
+  const data = await res.json();
+  const result = data.data?.metafieldsSet;
+  const errors = result?.userErrors || data.errors;
+  if (errors?.length) throw new Error(errors.map((e) => e.message || e).join('; '));
+  return result?.metafields;
 }
 
 /**

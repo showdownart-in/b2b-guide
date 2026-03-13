@@ -73,6 +73,12 @@ Content-Type: application/json
 | `company.address_province` | string | no | State/region **code** (e.g. `MH`, `NY`). |
 | `company.address_country` | string | no | Country name or **2-letter code** (e.g. `India`, `IN`). |
 | `company.address_zip` | string | no | ZIP / postal code. |
+| `company.projekttyp` | string | no | **Shopify Company metafield** `custom.projekttyp` (Projekttyp / Project type). |
+| `company.e_postfaktura` | string | no | **Shopify Company metafield** `custom.e_postfaktura` (E-postfaktura / Email invoice). |
+| `company.kundtyp` | string | no | **Shopify Company metafield** `custom.kundtyp` (Kundtyp / Customer type). |
+| `company.ansvarig_agent` | string | no | **Shopify Company metafield** `custom.ansvarig_agent` (Ansvarig agent / Responsible agent). |
+| `company.saljare` | string | no | **Shopify Company metafield** `custom.saljare` (Säljare / Seller). |
+| `company.leveransvillkor` | string | no | **Shopify Company metafield** `custom.leveransvillkor` (Leveransvillkor / Delivery terms). |
 | `customer` | object | yes | Primary contact (customer) payload. |
 | `customer.first_name` | string | **yes** | Contact first name. |
 | `customer.last_name` | string | **yes** | Contact last name. |
@@ -93,7 +99,13 @@ Content-Type: application/json
     "address_city": "Mumbai",
     "address_province": "MH",
     "address_country": "IN",
-    "address_zip": "400001"
+    "address_zip": "400001",
+    "projekttyp": "Retail",
+    "e_postfaktura": "yes",
+    "kundtyp": "B2B",
+    "ansvarig_agent": "Agent A",
+    "saljare": "Sales 1",
+    "leveransvillkor": "DDP"
   },
   "customer": {
     "first_name": "Jane",
@@ -358,6 +370,25 @@ Example userErrors:
 - `"Zone code is invalid"` (use short code, e.g. `MH`, not "Maharashtra").
 - `"Expected \"India\" to be one of: AF, AX, ... IN, US, ..."` (use 2-letter `countryCode`, e.g. `IN`).
 
+### Company custom metafields (metafieldsSet)
+
+Shopify’s `companyCreate` mutation does **not** accept metafields. To store custom data on the Company (e.g. for Pyramid CRM), the app calls the **`metafieldsSet`** GraphQL mutation **after** the company is created, using the new company’s GID as `ownerId`.
+
+**Metafields used in this app (namespace `custom`):**
+
+| `namespace.key` | Description (example) |
+|-----------------|----------------------|
+| `custom.projekttyp` | Projekttyp (Project type) |
+| `custom.e_postfaktura` | E-postfaktura (Email invoice) |
+| `custom.kundtyp` | Kundtyp (Customer type) |
+| `custom.ansvarig_agent` | Ansvarig agent (Responsible agent) |
+| `custom.saljare` | Säljare (Seller) |
+| `custom.leveransvillkor` | Leveransvillkor (Delivery terms) |
+
+- **Flow:** When Pyramid sends `company.projekttyp`, `company.e_postfaktura`, etc. in `POST /api/onboard`, the app stores them in the local company record. After `companyCreate` returns the company GID, the app calls `metafieldsSet` with up to 25 metafields; each has `ownerId` (company GID), `namespace: "custom"`, `key`, `type: "single_line_text_field"`, and `value`.
+- **Updating:** To update these metafields on an existing Shopify company, call `metafieldsSet` again with the same `ownerId` and keys; values are overwritten.
+- **Implementation:** See `services/shopify.js`: `setCompanyMetafields(companyIdGid, metafields)`.
+
 ---
 
 ## 5. Shopify GraphQL API: assign customer as company contact
@@ -425,6 +456,7 @@ When the user submits the single form and the app receives `POST /api/onboard`:
 | 4 | Set customer status to `approved` | App (SQLite) |
 | 5 | Call `syncCompanyToShopify(companyId)` | App → Shopify |
 | 5a | Create B2B company (and optional location + inline contact) | GraphQL `companyCreate` |
+| 5a.1 | Set company custom metafields (if provided) | GraphQL `metafieldsSet` (namespace `custom`) |
 | 5b | Store `shopify_company_id` and `shopify_location_id` on company | App (SQLite) |
 | 5c | For each approved customer linked to company: | |
 | 5c.i | Create customer in Shopify | REST `POST /customers.json` |

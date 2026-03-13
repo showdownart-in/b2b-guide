@@ -29,9 +29,24 @@
 - **Country** in the form must be a **2-letter ISO code** (e.g. IN, US) or a full name that the app can map to a code.
 - **State/Province** must be a **short code** (e.g. MH, NY), not a full name.
 
+### Custom metafields on the Company (Pyramid data in Shopify)
+
+Pyramid can send extra company attributes that are stored as **Shopify Company metafields** (namespace `custom`). When you create or update a company, include these optional fields so they appear on the Company in Shopify:
+
+| App field (in company payload) | Shopify metafield | Description (example) |
+|--------------------------------|-------------------|------------------------|
+| `projekttyp` | `custom.projekttyp` | Projekttyp (Project type) |
+| `e_postfaktura` | `custom.e_postfaktura` | E-postfaktura (Email invoice) |
+| `kundtyp` | `custom.kundtyp` | Kundtyp (Customer type) |
+| `ansvarig_agent` | `custom.ansvarig_agent` | Ansvarig agent (Responsible agent) |
+| `saljare` | `custom.saljare` | Säljare (Seller) |
+| `leveransvillkor` | `custom.leveransvillkor` | Leveransvillkor (Delivery terms) |
+
+**How it works:** Shopify’s company create API does not accept metafields in one step. This app first creates the company, then calls Shopify’s `metafieldsSet` mutation with the company’s ID and the values you sent. So when integrating Pyramid: (1) send these six fields in the company object when creating a company (e.g. in `POST /api/onboard`), and (2) when updating a company in Shopify, use the same `metafieldsSet` API with the company’s Shopify ID to update these custom fields. Full details and request shapes are in **docs/FLOW_AND_API.md** (section “Company custom metafields”) and **SHOPIFY_API.md** (section “Company custom metafields”).
+
 ### Where to see the exact APIs
 
-- **docs/FLOW_AND_API.md** – Full flow, request/response examples, and all required fields for `POST /api/onboard` and for the Shopify calls.
+- **docs/FLOW_AND_API.md** – Full flow, request/response examples, and all required fields for `POST /api/onboard` and for the Shopify calls (including metafields).
 - **SHOPIFY_API.md** – Exact Shopify endpoints, request bodies, and how the app uses them.
 
 ---

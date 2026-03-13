@@ -19,6 +19,12 @@ export function OnboardForm() {
       address_province: form.address_province.value.trim() || undefined,
       address_country: form.address_country.value.trim() || undefined,
       address_zip: form.address_zip.value.trim() || undefined,
+      projekttyp: form.projekttyp?.value?.trim() || undefined,
+      e_postfaktura: form.e_postfaktura?.value?.trim() || undefined,
+      kundtyp: form.kundtyp?.value?.trim() || undefined,
+      ansvarig_agent: form.ansvarig_agent?.value?.trim() || undefined,
+      saljare: form.saljare?.value?.trim() || undefined,
+      leveransvillkor: form.leveransvillkor?.value?.trim() || undefined,
     };
     const customer = {
       first_name: form.first_name.value.trim(),
@@ -63,6 +69,36 @@ export function OnboardForm() {
           <div className="row">
             <label>External ID</label>
             <input type="text" name="external_id" placeholder="PYR-123" />
+          </div>
+          <div className="row two-cols">
+            <div>
+              <label>Projekttyp</label>
+              <input type="text" name="projekttyp" placeholder="Project type" />
+            </div>
+            <div>
+              <label>E-postfaktura</label>
+              <input type="text" name="e_postfaktura" placeholder="Email invoice" />
+            </div>
+          </div>
+          <div className="row two-cols">
+            <div>
+              <label>Kundtyp</label>
+              <input type="text" name="kundtyp" placeholder="Customer type" />
+            </div>
+            <div>
+              <label>Ansvarig agent</label>
+              <input type="text" name="ansvarig_agent" placeholder="Responsible agent" />
+            </div>
+          </div>
+          <div className="row two-cols">
+            <div>
+              <label>Säljare</label>
+              <input type="text" name="saljare" placeholder="Seller" />
+            </div>
+            <div>
+              <label>Leveransvillkor</label>
+              <input type="text" name="leveransvillkor" placeholder="Delivery terms" />
+            </div>
           </div>
         </fieldset>
 

@@ -21,8 +21,9 @@ export function getCompany(id) {
 
 export function createCompany(data) {
   const stmt = db.prepare(`
-    INSERT INTO companies (name, external_id, email, phone, address_line1, address_city, address_province, address_country, address_zip, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+    INSERT INTO companies (name, external_id, email, phone, address_line1, address_city, address_province, address_country, address_zip,
+      projekttyp, e_postfaktura, kundtyp, ansvarig_agent, saljare, leveransvillkor, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
   `);
   const result = stmt.run(
     data.name,
@@ -33,7 +34,13 @@ export function createCompany(data) {
     data.address_city || null,
     data.address_province || null,
     data.address_country || null,
-    data.address_zip || null
+    data.address_zip || null,
+    data.projekttyp ?? null,
+    data.e_postfaktura ?? null,
+    data.kundtyp ?? null,
+    data.ansvarig_agent ?? null,
+    data.saljare ?? null,
+    data.leveransvillkor ?? null
   );
   return getCompany(result.lastInsertRowid);
 }
@@ -112,6 +119,12 @@ function rowToCompany(row) {
     address_province: row.address_province,
     address_country: row.address_country,
     address_zip: row.address_zip,
+    projekttyp: row.projekttyp ?? null,
+    e_postfaktura: row.e_postfaktura ?? null,
+    kundtyp: row.kundtyp ?? null,
+    ansvarig_agent: row.ansvarig_agent ?? null,
+    saljare: row.saljare ?? null,
+    leveransvillkor: row.leveransvillkor ?? null,
     status: row.status,
     shopify_company_id: row.shopify_company_id,
     shopify_location_id: row.shopify_location_id,
