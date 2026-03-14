@@ -24,7 +24,8 @@ This document explains the **exact Shopify Admin APIs** called by the sample app
    - [Sync a company (and its approved customers)](#sync-a-company-and-its-approved-customers)
 5. [Error handling behavior (important for ops)](#error-handling-behavior-important-for-ops)
 6. [Partial order fulfillment (REST Admin API)](#partial-order-fulfillment-rest-admin-api)
-7. [What this app does NOT do (yet)](#what-this-app-does-not-do-yet)
+7. [Variant metafields & “Continue selling when out of stock”](#variant-metafields--continue-selling-when-out-of-stock)
+8. [What this app does NOT do (yet)](#what-this-app-does-not-do-yet)
 
 ---
 
@@ -548,6 +549,14 @@ The app supports **partial fulfillment** of an order (fulfill only some line ite
 **5) Create fulfillment:** `POST /admin/api/{version}/fulfillments.json` — used in `createFulfillment(lineItemsByFulfillmentOrder, options)`. Request: `fulfillment.line_items_by_fulfillment_order` = `[{ fulfillment_order_id, fulfillment_order_line_items: [{ id, quantity }] }]`. Omit `fulfillment_order_line_items` to fulfill all items. Optional: `tracking_info`, `notify_customer`. Response (201): `fulfillment` with `id`, `order_id`, `status`, `line_items`.
 
 **How we did it:** `getFulfillmentOrders(orderId)`; `buildPartialFulfillmentPayload(fulfillmentOrders, orderLineItemIds)` to map order line item ids to the payload; `createFulfillment(...)`; `partialFulfillOrder(orderId, orderLineItemIds, options)` runs the full flow. Script: `node scripts/partial-fulfill-order.js`. Scopes: `read_merchant_managed_fulfillment_orders`, `write_merchant_managed_fulfillment_orders` (or equivalent).
+
+---
+
+## Variant metafields & “Continue selling when out of stock”
+
+A separate guide for the Pyramid team covers **updating a product variant’s four custom metafields** and **enabling “Continue selling when out of stock”** in Shopify:
+
+- **`docs/Variant_Metafields_And_Inventory.md`** – Variant metafields (`custom.moq`, `custom.variant_incoming_stock`, `custom.variant_incoming_stock_date`, `custom.variant_stock_tentative_date`), inventory policy (`CONTINUE`), and full request/response examples using `productVariantsBulkUpdate` and `metafieldsSet`.
 
 ---
 

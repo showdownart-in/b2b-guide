@@ -23,6 +23,7 @@ Open **http://localhost:3000**. You can create companies and customers, approve 
 
 - **Flow & API reference:** See **`docs/FLOW_AND_API.md`** for a full guide: app flow, `POST /api/onboard` request/response, and the underlying Shopify REST (create customer) and GraphQL (create company, assign contact) calls with required bodies and responses.
 - **Shopify calls only:** See `SHOPIFY_API.md` for a focused breakdown of the Shopify REST + GraphQL calls.
+- **Variant metafields & inventory:** See **`docs/Variant_Metafields_And_Inventory.md`** for how to update a variant’s four custom metafields (`moq`, `variant_incoming_stock`, `variant_incoming_stock_date`, `variant_stock_tentative_date`) and enable “Continue selling when out of stock” (Pyramid team guide with samples).
 
 ### React frontend (development)
 
