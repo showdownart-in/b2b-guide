@@ -8,7 +8,8 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "build": "npm run build --prefix client",
-    "dev:client": "npm run dev --prefix client"
+    "dev:client": "npm run dev --prefix client",
+    "assign:catalog": "node scripts/assign-company-location-to-catalog.js"
   },
   "dependencies": {
     "better-sqlite3": "^11.6.0",

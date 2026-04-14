@@ -1,0 +1,25 @@
+{
+    "company": "Example Company AB",
+    "first_name": "John",
+    "last_name": "Doe",
+    "Organisationsnummer": "556677-8899",
+    "email": "john.doe@example.com",
+    "invoice_email": "invoices@example.com",
+    "phone": "+46701234567",
+    "phone_country": "se",
+    "currency": "SEK",
+    
+    "billing_address": "Storgatan 1",
+    "billing_zip": "111 22",
+    "billing_city": "Stockholm",
+    "billing_country": "Sweden",
+    "billing_country_code": "se",
+    
+    "shipping_zip": "111 22",
+    "shipping_city": "Stockholm",
+    "shipping_country": "Sweden",
+    "shipping_country_code": "se",
+    
+    "form_type": "b2b_application",
+    "timestamp": "2024-01-15T10:30:00.000Z"
+  }
