@@ -1,6 +1,8 @@
 # Assign company location to a catalog (Pyramid guide)
 
-This guide explains how to assign a Shopify **Company Location** to a **Catalog** using the script:
+This guide explains how to assign a Shopify **Company Location** to a **Catalog** using Shopify APIs.
+
+The script in this repo is only a **reference/template implementation**:
 
 - `scripts/assign-company-location-to-catalog.js`
 
@@ -20,6 +22,10 @@ It adds the location under:
 
 - `contextsToAdd.companyLocationIds`
 
+This is the key requirement for Pyramid:
+
+- Link each relevant company location to catalog `76975472779` (**Sverige B2B**).
+
 ---
 
 ## Prerequisites
@@ -28,26 +34,30 @@ It adds the location under:
    - `SHOPIFY_SHOP_URL`
    - `SHOPIFY_ACCESS_TOKEN`
    - `SHOPIFY_API_VERSION` (optional, default used by script)
-2. Company is already synced to Shopify (if you plan to pass local `--company-id`).
-3. App token has permissions to edit catalogs/contexts (typically `write_products` + catalog permissions in Shopify admin).
+
+2. App token has permissions to edit catalogs/contexts (typically `write_products` + catalog permissions in Shopify admin).
 
 ---
 
-## Input options
+### Required Shopify inputs
 
-You must pass **one** of these:
+Use one of these ways to get company location:
 
-- `--company-id=<local_company_id>`
-  - Script reads `shopify_location_id` from local Pyramid DB (`companies.shopify_location_id`).
-- `--shopify-company-id=<shopify_company_id_or_gid>`
-  - Script fetches company primary location from Shopify GraphQL (`company(id) -> locations(first:1)`).
-- `--company-location-id=<shopify_company_location_id_or_gid>`
-  - Use direct Shopify Company Location ID.
+- **`companyLocationId`** directly (best if already available in your Pyramid flow), or
+- **`companyId`** then query Shopify for location (`company(id) -> locations(first: 1)`).
 
-Optional:
+Catalog target:
 
-- `--catalog-id=<catalog_id_or_gid>`
-  - Defaults to `76975472779` (**Sverige B2B**) if omitted.
+- **Sverige B2B catalog id:** `76975472779`
+- Catalog GID format: `gid://shopify/Catalog/76975472779`
+
+### API call sequence
+
+1. Resolve company location ID (if you only have company ID):
+   - Query `company(id)` and read `locations(first: 1)`.
+2. Call `catalogContextUpdate` with:
+   - `catalogId = gid://shopify/Catalog/76975472779`
+   - `contextsToAdd.companyLocationIds = [gid://shopify/CompanyLocation/{id}]`
 
 ---
 
@@ -66,7 +76,7 @@ The script auto-converts numeric IDs to GID format before calling GraphQL.
 
 ---
 
-## Usage examples
+## Usage examples (Used in the template App)
 
 ### 1) Assign using local company id (recommended in this app)
 
@@ -193,3 +203,27 @@ Example:
 3. Immediately call this script logic (or same mutation in backend) to add location to catalog `76975472779` (**Sverige B2B**).
 
 This gives you an effectively “direct” assignment right after company creation.
+
+---
+
+## Script option (template only, use if helpful)
+
+If Pyramid team wants a quick runnable example, this repo provides:
+
+- `scripts/assign-company-location-to-catalog.js`
+
+Script input options:
+
+- `--company-id=<local_company_id>`
+  - Reads `shopify_location_id` from this app's local SQLite DB (`companies.shopify_location_id`).
+- `--shopify-company-id=<shopify_company_id_or_gid>`
+  - Resolves first location via Shopify GraphQL.
+- `--company-location-id=<shopify_company_location_id_or_gid>`
+  - Uses direct location ID.
+- `--catalog-id=<catalog_id_or_gid>` (optional)
+  - Defaults to `76975472779` (**Sverige B2B**).
+
+Important:
+
+- This script is a template/example from this app.
+- Pyramid can implement the same Shopify API calls in its own technology stack.
