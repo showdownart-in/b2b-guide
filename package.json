@@ -9,7 +9,9 @@
     "dev": "node --watch server.js",
     "build": "npm run build --prefix client",
     "dev:client": "npm run dev --prefix client",
-    "assign:catalog": "node scripts/assign-company-location-to-catalog.js"
+    "assign:catalog": "node scripts/assign-company-location-to-catalog.js",
+    "consent:email": "node scripts/update-customer-email-marketing-consent.js",
+    "create:customer:email-consent": "node scripts/create-customer-with-email-marketing.js"
   },
   "dependencies": {
     "better-sqlite3": "^11.6.0",
