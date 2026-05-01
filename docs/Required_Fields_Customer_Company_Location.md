@@ -1,6 +1,6 @@
 # Required fields contract (Pyramid -> Shopify)
 
-This document is based on live Shopify entities provided by Pyramid team:
+This document is based on live Shopify entities for your reference:
 
 - Customer: `9412817420538`
 - Company: `2720039162`
@@ -81,7 +81,7 @@ Even if Shopify API allows fewer fields, Pyramid should treat the following as *
 - `companyLocation.shippingAddress.city`
 - `companyLocation.shippingAddress.countryCode` (example `SE`)
 - `companyLocation.shippingAddress.zip`
-- `companyLocation.shippingAddress.recipient`
+- `companyLocation.shippingAddress.recipient`  (Keep company name as `recipient`)
 - `companyLocation.shippingAddress.firstName`
 - `companyLocation.shippingAddress.lastName`
 - `companyLocation.shippingAddress.phone`
